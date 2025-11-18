@@ -1,0 +1,2 @@
+# hazelcast_client_template
+hazelcast_template 
