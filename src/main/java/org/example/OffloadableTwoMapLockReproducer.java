@@ -12,19 +12,20 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-public class OffloadableLockOnlyReproducer {
+public class OffloadableTwoMapLockReproducer {
 
+    private static final String TRADES_MAP = "trades";
     private static final String POSITIONS_MAP = "positions";
 
     public static void main(String[] args) throws Exception {
+
         long epSleepMillis = 2000;
         int hotKeyCount = 1000;
         int getAllBatchSize = 1000;
 
         Config cfg = new Config();
-        cfg.setClusterName("offloadable-lock-reproducer");
+        cfg.setClusterName("offloadable-two-map-lock-reproducer");
 
-        // Optional license
         String license = System.getenv("HZ_LICENSEKEY");
         if (license == null || license.isEmpty()) {
             System.err.println("WARNING: HZ_LICENSEKEY not set, cluster may start in OSS mode.");
@@ -32,16 +33,21 @@ public class OffloadableLockOnlyReproducer {
             cfg.setLicenseKey(license);
         }
 
+        cfg.addMapConfig(new MapConfig(TRADES_MAP));
         cfg.addMapConfig(new MapConfig(POSITIONS_MAP));
 
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(cfg);
-        IMap<String, Long> positions = hz.getMap(POSITIONS_MAP);
 
+        IMap<String, Long> tradesMap = hz.getMap(TRADES_MAP);
+        IMap<String, Long> positionsMap = hz.getMap(POSITIONS_MAP);
+
+        // Same keys in both maps so they share partitions
         List<String> allKeys = new ArrayList<>();
         for (int i = 0; i < 50_000; i++) {
             String key = "K" + i;
             allKeys.add(key);
-            positions.put(key, 0L);
+            tradesMap.put(key, 0L);
+            positionsMap.put(key, 0L);
         }
 
         if (hotKeyCount > allKeys.size()) hotKeyCount = allKeys.size();
@@ -51,36 +57,38 @@ public class OffloadableLockOnlyReproducer {
         List<String> getAllKeys = allKeys.subList(0, getAllBatchSize);
 
         System.out.println("Started member, keys=" + allKeys.size());
-        System.out.println("Mode: Offloadable EP + explicit locks");
+        System.out.println("Mode: Positions lock + Offloadable EP, Trades getAll");
         System.out.println("EP sleep millis: " + epSleepMillis);
         System.out.println("Hot keys: " + hotKeys.size());
         System.out.println("getAll batch size: " + getAllKeys.size());
+        System.out.println("tradesMap name: " + TRADES_MAP);
         System.out.println("positionsMap name: " + POSITIONS_MAP);
 
-        Thread epThread = new Thread(
-                () -> runLockOffloadableEpLoop(positions, hotKeys, epSleepMillis),
+        Thread positionsThread = new Thread(
+                () -> runPositionsLockOffloadableLoop(positionsMap, hotKeys, epSleepMillis),
                 "positions-offloadable-ep-thread"
         );
-        epThread.setDaemon(true);
-        epThread.start();
+        positionsThread.setDaemon(true);
+        positionsThread.start();
 
-        runGetAllDriver(positions, getAllKeys);
+        runTradesGetAllDriver(tradesMap, getAllKeys);
 
         hz.shutdown();
     }
 
-    private static void runLockOffloadableEpLoop(IMap<String, Long> positionsMap,
-                                                 List<String> keys,
-                                                 long sleepMillis) {
+    // Positions: lock -> Offloadable EP -> unlock, on hot keys
+    private static void runPositionsLockOffloadableLoop(IMap<String, Long> positionsMap,
+                                                        List<String> keys,
+                                                        long sleepMillis) {
         while (true) {
             long txStart = System.nanoTime();
             try {
                 // lock all hot keys
-//                for (String key : keys) {
-//                    positionsMap.lock(key);
-//                }
+                for (String key : keys) {
+                    positionsMap.lock(key);
+                }
 
-                // execute offloadable EP on each hot key
+                // execute Offloadable EP on each hot key
                 for (String key : keys) {
                     EntryProcessor<String, Long, Void> ep =
                             new OffloadableSleepEP(sleepMillis);
@@ -105,8 +113,9 @@ public class OffloadableLockOnlyReproducer {
         }
     }
 
-    private static void runGetAllDriver(IMap<String, Long> map,
-                                        List<String> keys) throws InterruptedException {
+    // Trades: loop getAll on the same keys, measure latency
+    private static void runTradesGetAllDriver(IMap<String, Long> tradesMap,
+                                              List<String> keys) throws InterruptedException {
         Random rnd = new Random();
 
         while (true) {
@@ -114,11 +123,11 @@ public class OffloadableLockOnlyReproducer {
             Collections.shuffle(batch, rnd);
 
             long start = System.nanoTime();
-            Map<String, Long> result = map.getAll(new HashSet<>(batch));
+            Map<String, Long> result = tradesMap.getAll(new HashSet<>(batch));
             long durationMicros = TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - start);
 
             System.out.printf(Locale.ROOT,
-                    "[positions] getAll latency %d µs, size=%d%n",
+                    "[trades] getAll latency %d µs, size=%d%n",
                     durationMicros,
                     result.size()
             );
@@ -127,6 +136,7 @@ public class OffloadableLockOnlyReproducer {
         }
     }
 
+    // Offloadable EP that simulates heavy work and logs the thread name
     public static class OffloadableSleepEP
             implements EntryProcessor<String, Long, Void>, Offloadable, Serializable {
 
@@ -144,8 +154,7 @@ public class OffloadableLockOnlyReproducer {
         @Override
         public Void process(Map.Entry<String, Long> entry) {
             String threadName = Thread.currentThread().getName();
-            System.out.println("[OffloadableEP] " + entry.getKey()
-                    + " on " + threadName);
+            System.out.println("[OffloadableEP] " + entry.getKey() + " on " + threadName);
             try {
                 Thread.sleep(sleepMillis);
             } catch (InterruptedException e) {
