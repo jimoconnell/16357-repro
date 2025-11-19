@@ -99,10 +99,10 @@ public class TwoMapLockEpReproducer {
             try {
 
 //                if (!noLocks) {
-//                    for (String key : keys) {
-//                        positionsMap.lock(key);
-//                    }
-//                }
+                   for (String key : keys) {
+                       positionsMap.lock(key);
+                   }
+               }
 
                 if (locksOnly) {
                     try {
