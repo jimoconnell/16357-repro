@@ -76,9 +76,9 @@ public class OffloadableLockOnlyReproducer {
             long txStart = System.nanoTime();
             try {
                 // lock all hot keys
-//                for (String key : keys) {
-//                    positionsMap.lock(key);
-//                }
+               for (String key : keys) {
+                   positionsMap.lock(key);
+               }
 
                 // execute offloadable EP on each hot key
                 for (String key : keys) {
