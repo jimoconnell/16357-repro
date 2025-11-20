@@ -53,8 +53,10 @@ public class TwoMapLockEpReproducer {
             positionsMap.put(key, 0L);
         }
 
-        if (hotKeyCount > allKeys.size()) hotKeyCount = allKeys.size();
-        if (getAllBatchSize > allKeys.size()) getAllBatchSize = allKeys.size();
+        if (hotKeyCount > allKeys.size())
+            hotKeyCount = allKeys.size();
+        if (getAllBatchSize > allKeys.size())
+            getAllBatchSize = allKeys.size();
 
         List<String> hotKeys = allKeys.subList(0, hotKeyCount);
         List<String> getAllKeys = allKeys.subList(0, getAllBatchSize);
@@ -76,10 +78,8 @@ public class TwoMapLockEpReproducer {
                         epSleepMillis,
                         useOffloadable,
                         locksOnly,
-                        noLocks
-                ),
-                "positions-ep-thread"
-        );
+                        noLocks),
+                "positions-ep-thread");
         positionsThread.setDaemon(true);
         positionsThread.start();
 
@@ -89,20 +89,20 @@ public class TwoMapLockEpReproducer {
     }
 
     private static void runPositionsLockEpLoop(IMap<String, Long> positionsMap,
-                                               List<String> keys,
-                                               long sleepMillis,
-                                               boolean useOffloadable,
-                                               boolean locksOnly,
-                                               boolean noLocks) {
+            List<String> keys,
+            long sleepMillis,
+            boolean useOffloadable,
+            boolean locksOnly,
+            boolean noLocks) {
         while (true) {
             long txStart = System.nanoTime();
             try {
 
-//                if (!noLocks) {
-//                    for (String key : keys) {
-//                        positionsMap.lock(key);
-//                    }
-//                }
+                if (!noLocks) {
+                    for (String key : keys) {
+                        positionsMap.lock(key);
+                    }
+                }
 
                 if (locksOnly) {
                     try {
@@ -112,10 +112,9 @@ public class TwoMapLockEpReproducer {
                     }
                 } else {
                     for (String key : keys) {
-                        EntryProcessor<String, Long, Void> ep =
-                                useOffloadable
-                                        ? new OffloadableSleepEP(sleepMillis)
-                                        : new SleepEP(sleepMillis);
+                        EntryProcessor<String, Long, Void> ep = useOffloadable
+                                ? new OffloadableSleepEP(sleepMillis)
+                                : new SleepEP(sleepMillis);
                         positionsMap.executeOnKey(key, ep);
                     }
                 }
@@ -134,16 +133,15 @@ public class TwoMapLockEpReproducer {
             long txMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - txStart);
             System.out.println(
                     "[positions] TX finished in " + txMs +
-                    " ms, sleep=" + sleepMillis +
-                    " ms, locksOnly=" + locksOnly +
-                    ", offloadable=" + useOffloadable +
-                    ", noLocks=" + noLocks
-            );
+                            " ms, sleep=" + sleepMillis +
+                            " ms, locksOnly=" + locksOnly +
+                            ", offloadable=" + useOffloadable +
+                            ", noLocks=" + noLocks);
         }
     }
 
     private static void runTradesGetAllDriver(IMap<String, Long> tradesMap,
-                                              List<String> keys) throws InterruptedException {
+            List<String> keys) throws InterruptedException {
         Random rnd = new Random();
 
         while (true) {
@@ -157,8 +155,7 @@ public class TwoMapLockEpReproducer {
             System.out.printf(Locale.ROOT,
                     "[trades] getAll latency %d µs, size=%d%n",
                     durationMicros,
-                    result.size()
-            );
+                    result.size());
 
             Thread.sleep(100);
         }

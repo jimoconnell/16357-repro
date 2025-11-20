@@ -1,0 +1,52 @@
+<!--
+    ADD THIS SECTION to your hazelcast.xml file, right after the <cluster-name>dev</cluster-name> tag
+    and before the <properties> tag.
+    
+    You'll also need to add map configurations for "trades" and "positions" - see below.
+-->
+
+<!-- Enable User Code Namespaces -->
+<user-code-namespaces enabled="true">
+    <namespace name="ep-namespace">
+        <jar id="ep-jar">
+            <!-- JAR file path on the server -->
+            <url>file:///media/storage/8tb/projects/hz_versions/hazelcast-enterprise-5.5.2/custom-lib/hazelcast-noise-client-1.0-SNAPSHOT.jar</url>
+        </jar>
+    </namespace>
+</user-code-namespaces>
+
+<!--
+    ADD THESE MAP CONFIGURATIONS to your hazelcast.xml file, 
+    right after the existing <map name="default"> section ends (around line 400)
+-->
+
+<!-- Map configuration for trades with User Code Namespace -->
+<map name="trades">
+    <in-memory-format>BINARY</in-memory-format>
+    <backup-count>1</backup-count>
+    <async-backup-count>0</async-backup-count>
+    <time-to-live-seconds>0</time-to-live-seconds>
+    <max-idle-seconds>0</max-idle-seconds>
+    <eviction eviction-policy="NONE" max-size-policy="PER_NODE" size="0"/>
+    <merge-policy batch-size="100">com.hazelcast.spi.merge.PutIfAbsentMergePolicy</merge-policy>
+    <cache-deserialized-values>INDEX-ONLY</cache-deserialized-values>
+    <statistics-enabled>true</statistics-enabled>
+    <per-entry-stats-enabled>false</per-entry-stats-enabled>
+    <user-code-namespace>ep-namespace</user-code-namespace>
+</map>
+
+<!-- Map configuration for positions with User Code Namespace -->
+<map name="positions">
+    <in-memory-format>BINARY</in-memory-format>
+    <backup-count>1</backup-count>
+    <async-backup-count>0</async-backup-count>
+    <time-to-live-seconds>0</time-to-live-seconds>
+    <max-idle-seconds>0</max-idle-seconds>
+    <eviction eviction-policy="NONE" max-size-policy="PER_NODE" size="0"/>
+    <merge-policy batch-size="100">com.hazelcast.spi.merge.PutIfAbsentMergePolicy</merge-policy>
+    <cache-deserialized-values>INDEX-ONLY</cache-deserialized-values>
+    <statistics-enabled>true</statistics-enabled>
+    <per-entry-stats-enabled>false</per-entry-stats-enabled>
+    <user-code-namespace>ep-namespace</user-code-namespace>
+</map>
+
