@@ -102,7 +102,6 @@ public class TwoMapLockEpReproducer {
                    for (String key : keys) {
                        positionsMap.lock(key);
                    }
-               }
 
                 if (locksOnly) {
                     try {
