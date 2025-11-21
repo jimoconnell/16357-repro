@@ -93,21 +93,21 @@ wait $MEMBER_PID 2>/dev/null || true
 echo "✓ Member stopped"
 echo ""
 
-# Show diagnostics info
-echo "========================================"
-echo "  Diagnostics Information"
-echo "========================================"
-if [ -d "diagnostics" ]; then
-    echo "Diagnostics directory found:"
-    ls -lh diagnostics/ | head -10
-    echo ""
-    echo "Diagnostic files:"
-    find diagnostics -name "*.log" -type f | head -5
-    echo ""
-else
-    echo "No diagnostics directory found (diagnostics may not have been written yet)"
-    echo ""
-fi
+# # Show diagnostics info
+# echo "========================================"
+# echo "  Diagnostics Information"
+# echo "========================================"
+# if [ -d "diagnostics" ]; then
+#     echo "Diagnostics directory found:"
+#     ls -lh diagnostics/ | head -10
+#     echo ""
+#     echo "Diagnostic files:"
+#     find diagnostics -name "*.log" -type f | head -5
+#     echo ""
+# else
+#     echo "No diagnostics directory found (diagnostics may not have been written yet)"
+#     echo ""
+# fi
 
 # Show member logs with thread names
 echo "========================================"
