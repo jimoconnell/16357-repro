@@ -117,7 +117,7 @@ echo "Look for [OffloadableEP] messages showing thread names:"
 echo "  - cached.thread-N = OFFLOADED (good)"
 echo "  - partition-operation.thread-N = NOT OFFLOADED (locks present)"
 echo ""
-echo "Thread name output from EntryProcessors:"
+echo "Thread name output from EntryProcessors and ExecutorService:"
 echo ""
 echo "TEST 1 (WITH LOCKS) - should show partition-operation threads:"
 if grep -a "\[OffloadableEP" member.log | head -20 > /dev/null 2>&1; then
@@ -128,16 +128,26 @@ fi
 echo ""
 echo "TEST 2 (WITHOUT LOCKS) - should show cached threads:"
 if grep -a "\[OffloadableEP" member.log | tail -20 > /dev/null 2>&1; then
-    grep -a "\[OffloadableEP" member.log | tail -20
+    # Get middle section (TEST 2) - after TEST 1, before TEST 3
+    grep -a "\[OffloadableEP" member.log | tail -20 | head -20
 else
     echo "No OffloadableEP output found for TEST 2"
 fi
 echo ""
+echo "TEST 3 (ExecutorService WITH LOCKS) - should show executor/cached threads:"
+if grep -a "\[ExecutorServiceTask" member.log > /dev/null 2>&1; then
+    grep -a "\[ExecutorServiceTask" member.log | tail -20
+else
+    echo "No ExecutorServiceTask output found for TEST 3"
+fi
+echo ""
 echo "Summary - counting thread types:"
-echo "  Partition-operation threads (NOT OFFLOADED):"
+echo "  Partition-operation threads (NOT OFFLOADED - TEST 1):"
 grep -a "partition-operation.thread" member.log | wc -l | xargs echo "    Count:"
-echo "  Cached threads (OFFLOADED):"
+echo "  Cached threads (OFFLOADED - TEST 2 & 3):"
 grep -a "cached.thread" member.log | wc -l | xargs echo "    Count:"
+echo "  ExecutorService tasks (TEST 3):"
+grep -a "\[ExecutorServiceTask" member.log | wc -l | xargs echo "    Count:"
 echo ""
 
 if [ $CLIENT_EXIT_CODE -eq 0 ]; then

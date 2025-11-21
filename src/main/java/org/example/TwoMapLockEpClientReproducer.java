@@ -2,13 +2,17 @@ package org.example;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.Offloadable;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.IMap;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,7 +71,7 @@ public class TwoMapLockEpClientReproducer {
             System.out.println("========================================");
             System.out.println("  TEST 1: Offloadable EP WITH LOCKS");
             System.out.println("========================================");
-            System.out.println("Current behavior (BUG):");
+            System.out.println("Current behavior (BUG or by Design?):");
             System.out.println("  - EP runs on partition-operation threads (NOT offloaded)");
             System.out.println("  - getAll latency spikes to ~" + epSleepMillis + "ms");
             System.out.println("  - Locks prevent offloading even though EP is marked Offloadable");
@@ -97,6 +101,23 @@ public class TwoMapLockEpClientReproducer {
             
             runTest(hz, tradesMap, positionsMap, hotKeys, getAllKeys, 
                     epSleepMillis, useOffloadable, true, testDurationSeconds);
+            
+            Thread.sleep(2000); // Brief pause between tests
+            
+            // Test 3: ExecutorService WITH locks
+            System.out.println();
+            System.out.println("========================================");
+            System.out.println("  TEST 3: ExecutorService WITH LOCKS");
+            System.out.println("========================================");
+            System.out.println("Expected behavior (alternative solution):");
+            System.out.println("  - Task runs on executor threads (NOT partition threads)");
+            System.out.println("  - getAll latency should stay low");
+            System.out.println("  - This demonstrates ExecutorService as alternative to EP");
+            System.out.println("  - Watch server logs for thread names");
+            System.out.println();
+            
+            runExecutorServiceTest(hz, tradesMap, positionsMap, hotKeys, getAllKeys, 
+                    epSleepMillis, testDurationSeconds);
         } else {
             System.out.println("ERROR: Must use --offloadable flag");
             System.out.println("Usage: java ... TwoMapLockEpClientReproducer [server] --offloadable");
@@ -182,6 +203,124 @@ public class TwoMapLockEpClientReproducer {
             System.out.println("   Average latency: " + avgLatency + " µs (" + (avgLatency / 1000.0) + " ms)");
             System.out.println("   Min latency: " + min + " µs (" + (min / 1000.0) + " ms)");
             System.out.println("   Max latency: " + maxGetAllLatency.get() + " µs (" + (maxGetAllLatency.get() / 1000.0) + " ms)");
+        }
+    }
+
+    private static void runExecutorServiceTest(HazelcastInstance hz, 
+                                               IMap<String, Long> tradesMap, 
+                                               IMap<String, Long> positionsMap, 
+                                               List<String> hotKeys,
+                                               List<String> getAllKeys, 
+                                               long workDurationMillis, 
+                                               int durationSeconds) throws Exception {
+        
+        AtomicBoolean running = new AtomicBoolean(true);
+        AtomicLong getAllCount = new AtomicLong(0);
+        AtomicLong getAllTotalMicros = new AtomicLong(0);
+        AtomicLong maxGetAllLatency = new AtomicLong(0);
+        AtomicLong minGetAllLatency = new AtomicLong(Long.MAX_VALUE);
+        
+        IExecutorService executorService = hz.getExecutorService("default");
+        
+        Thread positionsThread = new Thread(
+                () -> runPositionsExecutorServiceLoop(
+                        positionsMap, executorService, hotKeys, workDurationMillis, running),
+                "positions-executor-thread");
+        positionsThread.setDaemon(true);
+        positionsThread.start();
+
+        Thread getAllThread = new Thread(
+                () -> {
+                    try {
+                        runTradesGetAllDriver(tradesMap, getAllKeys, running, 
+                                getAllCount, getAllTotalMicros, maxGetAllLatency, minGetAllLatency);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                },
+                "getAll-thread");
+        getAllThread.setDaemon(true);
+        getAllThread.start();
+
+        // Run for specified duration
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime + (durationSeconds * 1000);
+        
+        while (System.currentTimeMillis() < endTime) {
+            Thread.sleep(1000);
+            long elapsed = (System.currentTimeMillis() - startTime) / 1000;
+            System.out.print("\r⏱  Running... " + elapsed + "s / " + durationSeconds + "s");
+        }
+        System.out.println();
+        
+        running.set(false);
+        
+        // Wait for threads to finish gracefully
+        System.out.println("   Stopping background threads...");
+        try {
+            positionsThread.join(2000);
+            getAllThread.join(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        // Print summary
+        long count = getAllCount.get();
+        if (count > 0) {
+            long avgLatency = getAllTotalMicros.get() / count;
+            long min = minGetAllLatency.get() == Long.MAX_VALUE ? 0 : minGetAllLatency.get();
+            System.out.println();
+            System.out.println("📊 Results Summary:");
+            System.out.println("   getAll operations: " + count);
+            System.out.println("   Average latency: " + avgLatency + " µs (" + (avgLatency / 1000.0) + " ms)");
+            System.out.println("   Min latency: " + min + " µs (" + (min / 1000.0) + " ms)");
+            System.out.println("   Max latency: " + maxGetAllLatency.get() + " µs (" + (maxGetAllLatency.get() / 1000.0) + " ms)");
+        }
+    }
+
+    private static void runPositionsExecutorServiceLoop(IMap<String, Long> positionsMap,
+                                                        IExecutorService executorService,
+                                                        List<String> keys,
+                                                        long workDurationMillis,
+                                                        AtomicBoolean running) {
+        while (running.get()) {
+            try {
+                // Lock all keys
+                for (String key : keys) {
+                    if (!running.get()) break;
+                    try {
+                        positionsMap.lock(key);
+                    } catch (Exception e) {
+                        if (!running.get()) break;
+                        throw e;
+                    }
+                }
+
+                // Submit task to ExecutorService (runs on executor thread, NOT partition thread)
+                Future<Void> future = executorService.submit(
+                    new ProcessPositionsTask(new HashSet<>(keys), workDurationMillis, POSITIONS_MAP)
+                );
+                
+                // Wait for completion
+                try {
+                    future.get();
+                } catch (Exception e) {
+                    if (!running.get()) break;
+                    // Continue on other exceptions
+                }
+
+            } finally {
+                // Always unlock
+                for (String key : keys) {
+                    try {
+                        positionsMap.unlock(key);
+                    } catch (Exception ignore) {
+                        // Ignore unlock exceptions during shutdown
+                    }
+                }
+            }
+
+            if (!running.get()) break;
         }
     }
 
@@ -361,6 +500,59 @@ public class TwoMapLockEpClientReproducer {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
+            return null;
+        }
+    }
+
+    /**
+     * Task that runs on ExecutorService thread (NOT partition thread).
+     * This allows long-running work without blocking partition threads.
+     */
+    public static class ProcessPositionsTask implements Callable<Void>, Serializable {
+        
+        private final Set<String> keys;
+        private final long workDurationMillis;
+        private final String mapName;
+        
+        private static volatile int taskCount = 0;
+        
+        public ProcessPositionsTask(Set<String> keys, long workDurationMillis, String mapName) {
+            this.keys = keys;
+            this.workDurationMillis = workDurationMillis;
+            this.mapName = mapName;
+        }
+        
+        @Override
+        public Void call() throws Exception {
+            int count = ++taskCount;
+            String threadName = Thread.currentThread().getName();
+            
+            // Print first 200, then every 5th
+            boolean shouldPrint = count <= 200 || count % 5 == 0;
+            
+            if (shouldPrint) {
+                String msg = "[ExecutorServiceTask #" + count + "] Processing " + keys.size() 
+                        + " keys on " + threadName;
+                System.out.println(msg);
+                System.err.println(msg);
+                System.out.flush();
+                System.err.flush();
+            }
+            
+            // Get HazelcastInstance from member
+            HazelcastInstance hz = Hazelcast.getAllHazelcastInstances().iterator().next();
+            IMap<String, Long> map = hz.getMap(mapName);
+            
+            // Simulate work - this runs on executor thread, NOT partition thread!
+            Thread.sleep(workDurationMillis);
+            
+            // Access map and perform operations
+            // This won't block partition threads!
+            for (String key : keys) {
+                Long value = map.get(key);
+                map.put(key, value != null ? value + 1 : 1L);
+            }
+            
             return null;
         }
     }
