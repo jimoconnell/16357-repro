@@ -16,6 +16,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class TwoMapLockEpClientReproducer {
 
@@ -23,6 +25,11 @@ public class TwoMapLockEpClientReproducer {
     private static final String POSITIONS_MAP = "positions";
 
     public static void main(String[] args) throws Exception {
+        // Suppress Hazelcast client INFO logs
+        Logger.getLogger("com.hazelcast").setLevel(Level.WARNING);
+        Logger.getLogger("com.hazelcast.client").setLevel(Level.WARNING);
+        Logger.getLogger("com.hazelcast.core").setLevel(Level.WARNING);
+        Logger.getLogger("com.hazelcast.internal").setLevel(Level.WARNING);
         String serverAddress = args.length > 0 && !args[0].startsWith("--") 
                 ? args[0] 
                 : "localhost:5701";
@@ -31,7 +38,7 @@ public class TwoMapLockEpClientReproducer {
         long epSleepMillis = 2000;
         int hotKeyCount = 1000;
         int getAllBatchSize = 1000;
-        int testDurationSeconds = 50;
+        int getAllOperationCount = 10; // Number of getAll operations to perform per test
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setClusterName("dev");
@@ -43,7 +50,7 @@ public class TwoMapLockEpClientReproducer {
         System.out.println("Connecting to server: " + serverAddress);
         System.out.println("Cluster: dev");
         System.out.println("EP sleep: " + epSleepMillis + "ms");
-        System.out.println("Test duration: " + testDurationSeconds + " seconds per test");
+        System.out.println("getAll operations per test: " + getAllOperationCount);
         System.out.println();
 
         HazelcastInstance hz = HazelcastClient.newHazelcastClient(clientConfig);
@@ -68,9 +75,9 @@ public class TwoMapLockEpClientReproducer {
 
         if (useOffloadable) {
             // Test 1: WITH locks
-            System.out.println("========================================");
-            System.out.println("  TEST 1: Offloadable EP WITH LOCKS");
-            System.out.println("========================================");
+            // System.out.println("========================================");
+            System.out.println("##  TEST 1: Offloadable EP WITH LOCKS");
+            // System.out.println("========================================");
             System.out.println("Current behavior (BUG or by Design?):");
             System.out.println("  - EP runs on partition-operation threads (NOT offloaded)");
             System.out.println("  - getAll latency spikes to ~" + epSleepMillis + "ms");
@@ -83,15 +90,17 @@ public class TwoMapLockEpClientReproducer {
             System.out.println();
             
             runTest(hz, tradesMap, positionsMap, hotKeys, getAllKeys, 
-                    epSleepMillis, useOffloadable, false, testDurationSeconds);
+                    epSleepMillis, useOffloadable, false, getAllOperationCount, "TEST1");
             
             Thread.sleep(2000); // Brief pause between tests
             
             // Test 2: WITHOUT locks
             System.out.println();
-            System.out.println("========================================");
-            System.out.println("  TEST 2: Offloadable EP WITHOUT LOCKS");
-            System.out.println("========================================");
+            System.out.println();
+            System.out.println();
+            // System.out.println("========================================");
+            System.out.println("##  TEST 2: Offloadable EP WITHOUT LOCKS");
+            // System.out.println("========================================");
             System.out.println("Expected behavior (works correctly):");
             System.out.println("  - EP runs on cached threads (OFFLOADED)");
             System.out.println("  - getAll latency stays low");
@@ -100,15 +109,17 @@ public class TwoMapLockEpClientReproducer {
             System.out.println();
             
             runTest(hz, tradesMap, positionsMap, hotKeys, getAllKeys, 
-                    epSleepMillis, useOffloadable, true, testDurationSeconds);
+                    epSleepMillis, useOffloadable, true, getAllOperationCount, "TEST2");
             
             Thread.sleep(2000); // Brief pause between tests
             
             // Test 3: ExecutorService WITH locks
             System.out.println();
-            System.out.println("========================================");
-            System.out.println("  TEST 3: ExecutorService WITH LOCKS");
-            System.out.println("========================================");
+            System.out.println();
+            System.out.println();
+            // System.out.println("========================================");
+            System.out.println("##  TEST 3: ExecutorService WITH LOCKS");
+            // System.out.println("========================================");
             System.out.println("Expected behavior (alternative solution):");
             System.out.println("  - Task runs on executor threads (NOT partition threads)");
             System.out.println("  - getAll latency should stay low");
@@ -117,7 +128,7 @@ public class TwoMapLockEpClientReproducer {
             System.out.println();
             
             runExecutorServiceTest(hz, tradesMap, positionsMap, hotKeys, getAllKeys, 
-                    epSleepMillis, testDurationSeconds);
+                    epSleepMillis, getAllOperationCount);
         } else {
             System.out.println("ERROR: Must use --offloadable flag");
             System.out.println("Usage: java ... TwoMapLockEpClientReproducer [server] --offloadable");
@@ -125,9 +136,9 @@ public class TwoMapLockEpClientReproducer {
         }
 
         System.out.println();
-        System.out.println("========================================");
-        System.out.println("  All Tests Complete");
-        System.out.println("========================================");
+        // System.out.println("========================================");
+        System.out.println("## All Tests Complete");
+        // System.out.println("========================================");
         
         // Shutdown client gracefully
         try {
@@ -141,7 +152,8 @@ public class TwoMapLockEpClientReproducer {
     private static void runTest(HazelcastInstance hz, IMap<String, Long> tradesMap, 
                                 IMap<String, Long> positionsMap, List<String> hotKeys,
                                 List<String> getAllKeys, long epSleepMillis, 
-                                boolean useOffloadable, boolean noLocks, int durationSeconds) throws Exception {
+                                boolean useOffloadable, boolean noLocks, int targetGetAllCount,
+                                String testId) throws Exception {
         
         AtomicBoolean running = new AtomicBoolean(true);
         AtomicLong getAllCount = new AtomicLong(0);
@@ -152,7 +164,7 @@ public class TwoMapLockEpClientReproducer {
         Thread positionsThread = new Thread(
                 () -> runPositionsLockEpLoop(
                         positionsMap, hotKeys, epSleepMillis, 
-                        useOffloadable, false, noLocks, running),
+                        useOffloadable, false, noLocks, running, testId),
                 "positions-ep-thread");
         positionsThread.setDaemon(true);
         positionsThread.start();
@@ -170,14 +182,22 @@ public class TwoMapLockEpClientReproducer {
         getAllThread.setDaemon(true);
         getAllThread.start();
 
-        // Run for specified duration
+        // Run until we've completed the target number of getAll operations
         long startTime = System.currentTimeMillis();
-        long endTime = startTime + (durationSeconds * 1000);
+        long lastCount = 0;
+        long lastUpdateTime = startTime;
         
-        while (System.currentTimeMillis() < endTime) {
-            Thread.sleep(1000);
-            long elapsed = (System.currentTimeMillis() - startTime) / 1000;
-            System.out.print("\r⏱  Running... " + elapsed + "s / " + durationSeconds + "s");
+        while (getAllCount.get() < targetGetAllCount && running.get()) {
+            Thread.sleep(100);
+            long currentCount = getAllCount.get();
+            long currentTime = System.currentTimeMillis();
+            
+            // Update progress every 500ms or when count changes significantly
+            if (currentTime - lastUpdateTime >= 500 || currentCount != lastCount) {
+                System.out.print("\r⏱  Running... " + currentCount + " / " + targetGetAllCount + " getAll operations");
+                lastCount = currentCount;
+                lastUpdateTime = currentTime;
+            }
         }
         System.out.println();
         
@@ -192,6 +212,10 @@ public class TwoMapLockEpClientReproducer {
             Thread.currentThread().interrupt();
         }
         
+        // Calculate elapsed time
+        long endTime = System.currentTimeMillis();
+        double elapsedTimeSecs = (endTime - startTime) / 1000.0;
+        
         // Print summary
         long count = getAllCount.get();
         if (count > 0) {
@@ -199,7 +223,7 @@ public class TwoMapLockEpClientReproducer {
             long min = minGetAllLatency.get() == Long.MAX_VALUE ? 0 : minGetAllLatency.get();
             System.out.println();
             System.out.println("📊 Results Summary:");
-            System.out.println("   getAll operations: " + count);
+            System.out.println("   " + count + " getAll operations performed in " + elapsedTimeSecs + " secs");
             System.out.println("   Average latency: " + avgLatency + " µs (" + (avgLatency / 1000.0) + " ms)");
             System.out.println("   Min latency: " + min + " µs (" + (min / 1000.0) + " ms)");
             System.out.println("   Max latency: " + maxGetAllLatency.get() + " µs (" + (maxGetAllLatency.get() / 1000.0) + " ms)");
@@ -212,7 +236,7 @@ public class TwoMapLockEpClientReproducer {
                                                List<String> hotKeys,
                                                List<String> getAllKeys, 
                                                long workDurationMillis, 
-                                               int durationSeconds) throws Exception {
+                                               int targetGetAllCount) throws Exception {
         
         AtomicBoolean running = new AtomicBoolean(true);
         AtomicLong getAllCount = new AtomicLong(0);
@@ -242,14 +266,22 @@ public class TwoMapLockEpClientReproducer {
         getAllThread.setDaemon(true);
         getAllThread.start();
 
-        // Run for specified duration
+        // Run until we've completed the target number of getAll operations
         long startTime = System.currentTimeMillis();
-        long endTime = startTime + (durationSeconds * 1000);
+        long lastCount = 0;
+        long lastUpdateTime = startTime;
         
-        while (System.currentTimeMillis() < endTime) {
-            Thread.sleep(1000);
-            long elapsed = (System.currentTimeMillis() - startTime) / 1000;
-            System.out.print("\r⏱  Running... " + elapsed + "s / " + durationSeconds + "s");
+        while (getAllCount.get() < targetGetAllCount && running.get()) {
+            Thread.sleep(100);
+            long currentCount = getAllCount.get();
+            long currentTime = System.currentTimeMillis();
+            
+            // Update progress every 500ms or when count changes significantly
+            if (currentTime - lastUpdateTime >= 500 || currentCount != lastCount) {
+                System.out.print("\r⏱  Running... " + currentCount + " / " + targetGetAllCount + " getAll operations");
+                lastCount = currentCount;
+                lastUpdateTime = currentTime;
+            }
         }
         System.out.println();
         
@@ -264,6 +296,10 @@ public class TwoMapLockEpClientReproducer {
             Thread.currentThread().interrupt();
         }
         
+        // Calculate elapsed time
+        long endTime = System.currentTimeMillis();
+        double elapsedTimeSecs = (endTime - startTime) / 1000.0;
+        
         // Print summary
         long count = getAllCount.get();
         if (count > 0) {
@@ -271,7 +307,7 @@ public class TwoMapLockEpClientReproducer {
             long min = minGetAllLatency.get() == Long.MAX_VALUE ? 0 : minGetAllLatency.get();
             System.out.println();
             System.out.println("📊 Results Summary:");
-            System.out.println("   getAll operations: " + count);
+            System.out.println("   " + count + " getAll operations performed in " + elapsedTimeSecs + " secs");
             System.out.println("   Average latency: " + avgLatency + " µs (" + (avgLatency / 1000.0) + " ms)");
             System.out.println("   Min latency: " + min + " µs (" + (min / 1000.0) + " ms)");
             System.out.println("   Max latency: " + maxGetAllLatency.get() + " µs (" + (maxGetAllLatency.get() / 1000.0) + " ms)");
@@ -330,7 +366,8 @@ public class TwoMapLockEpClientReproducer {
             boolean useOffloadable,
             boolean locksOnly,
             boolean noLocks,
-            AtomicBoolean running) {
+            AtomicBoolean running,
+            String testId) {
         while (running.get()) {
             try {
                 if (!noLocks) {
@@ -357,7 +394,7 @@ public class TwoMapLockEpClientReproducer {
                         if (!running.get()) break;
                         try {
                             EntryProcessor<String, Long, Void> ep = useOffloadable
-                                    ? new OffloadableSleepEP(sleepMillis)
+                                    ? new OffloadableSleepEP(sleepMillis, testId)
                                     : new SleepEP(sleepMillis);
                             positionsMap.executeOnKey(key, ep);
                         } catch (Exception e) {
@@ -465,9 +502,11 @@ public class TwoMapLockEpClientReproducer {
             implements EntryProcessor<String, Long, Void>, Offloadable, Serializable {
 
         private final long sleepMillis;
+        private final String testId;
 
-        public OffloadableSleepEP(long sleepMillis) {
+        public OffloadableSleepEP(long sleepMillis, String testId) {
             this.sleepMillis = sleepMillis;
+            this.testId = testId;
         }
 
         @Override
@@ -489,7 +528,7 @@ public class TwoMapLockEpClientReproducer {
                 
                 if (shouldPrint) {
                     // Print to both stdout and stderr for visibility
-                    String msg = "[OffloadableEP #" + count + "] " + entry.getKey()
+                    String msg = "[" + testId + " OffloadableEP #" + count + "] " + entry.getKey()
                             + " on " + threadName + " [" + status + "]";
                     System.out.println(msg);
                     System.err.println(msg);

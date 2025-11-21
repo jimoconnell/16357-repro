@@ -81,7 +81,7 @@ echo "🧪 Running client tests..."
 echo ""
 echo "NOTE: Thread names from EntryProcessors will appear in member logs below"
 echo ""
-mvn exec:java -Dexec.mainClass="org.example.TwoMapLockEpClientReproducer" -Dexec.args="localhost:5701 --offloadable"
+mvn -q exec:java -Dexec.mainClass="org.example.TwoMapLockEpClientReproducer" -Dexec.args="localhost:5701 --offloadable"
 
 CLIENT_EXIT_CODE=$?
 
@@ -119,19 +119,37 @@ echo "  - partition-operation.thread-N = NOT OFFLOADED (locks present)"
 echo ""
 echo "Thread name output from EntryProcessors and ExecutorService:"
 echo ""
-echo "TEST 1 (WITH LOCKS) - should show partition-operation threads:"
-if grep -a "\[OffloadableEP" member.log | head -20 > /dev/null 2>&1; then
-    grep -a "\[OffloadableEP" member.log | head -20
+
+# Extract OffloadableEP lines by test identifier
+TEST1_LINES=$(grep -a "\[TEST1 OffloadableEP" member.log)
+TEST2_LINES=$(grep -a "\[TEST2 OffloadableEP" member.log)
+
+if [ -n "$TEST1_LINES" ] || [ -n "$TEST2_LINES" ]; then
+    echo "TEST 1 (WITH LOCKS) - should show partition-operation threads:"
+    if [ -n "$TEST1_LINES" ]; then
+        echo "$TEST1_LINES"
+    else
+        echo "(No TEST 1 output found)"
+    fi
+    echo ""
+    echo "TEST 2 (WITHOUT LOCKS) - should show cached threads:"
+    if [ -n "$TEST2_LINES" ]; then
+        echo "$TEST2_LINES"
+    else
+        echo "(No TEST 2 output found)"
+    fi
 else
-    echo "No OffloadableEP output found for TEST 1"
-fi
-echo ""
-echo "TEST 2 (WITHOUT LOCKS) - should show cached threads:"
-if grep -a "\[OffloadableEP" member.log | tail -20 > /dev/null 2>&1; then
-    # Get middle section (TEST 2) - after TEST 1, before TEST 3
-    grep -a "\[OffloadableEP" member.log | tail -20 | head -20
-else
-    echo "No OffloadableEP output found for TEST 2"
+    # Fallback: try old format without test identifiers
+    EP_LINES=$(grep -a "\[OffloadableEP" member.log)
+    if [ -n "$EP_LINES" ]; then
+        echo "TEST 1 (WITH LOCKS) - should show partition-operation threads:"
+        echo "$EP_LINES" | head -10
+        echo ""
+        echo "TEST 2 (WITHOUT LOCKS) - should show cached threads:"
+        echo "$EP_LINES" | tail -10
+    else
+        echo "No OffloadableEP output found"
+    fi
 fi
 echo ""
 echo "TEST 3 (ExecutorService WITH LOCKS) - should show executor/cached threads:"
