@@ -1,0 +1,218 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------< com.example:hazelcast-noise-client >-----------------
+[INFO] Building hazelcast-noise-client 1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- exec:3.6.2:java (default-cli) @ hazelcast-noise-client ---
+=== Starting Hazelcast Member with User Code Namespaces ===
+License key configured from HZ_LICENSEKEY environment variable
+✓ Diagnostics enabled - output directory: /Users/jim/projects/16357-repro/diagnostics
+✓ User Code Namespace 'ep-namespace' configured
+  JAR: /Users/jim/projects/16357-repro/target/hazelcast-noise-client-1.0-SNAPSHOT.jar
+✓ Maps configured: trades, positions
+  Both maps associated with namespace: ep-namespace
+Nov 21, 2025 12:36:09 PM com.hazelcast.instance.impl.HazelcastInstanceFactory
+WARNING: Hazelcast is starting in a Java modular environment (Java 9 and newer) but without proper access to required Java packages. Use additional Java arguments to provide Hazelcast access to Java internal API. The internal API access is used to get the best performance results. Arguments to be used:
+ --add-modules java.se --add-exports java.base/jdk.internal.ref=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.management/sun.management=ALL-UNNAMED --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED
+Nov 21, 2025 12:36:09 PM com.hazelcast.system.logo
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] 
+    o    o     o     o---o   o--o o      o---o     o     o----o o--o--o
+    |    |    / \       /         |     /         / \    |         |
+    o----o       o     o   o----o |    o             o   o----o    |
+    |    |  *     \   /           |     \       *     \       |    |
+    o    o *       o o---o   o--o o----o o---o *       o o----o    o
+
+Nov 21, 2025 12:36:09 PM com.hazelcast.system
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Copyright (c) 2008-2025, Hazelcast, Inc. All Rights Reserved.
+Nov 21, 2025 12:36:09 PM com.hazelcast.system
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Hazelcast Enterprise 5.6.0 (20251015 - 8444f45) starting at [100.103.68.83]:5701
+Nov 21, 2025 12:36:09 PM com.hazelcast.system
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Cluster name: dev
+Nov 21, 2025 12:36:09 PM com.hazelcast.system
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Integrity Checker is disabled. Fail-fast on corrupted executables will not be performed. For more information, see the documentation for Integrity Checker.
+Nov 21, 2025 12:36:09 PM com.hazelcast.system
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] The Jet engine is disabled.
+To enable the Jet engine on the members, do one of the following:
+  - Change member config using Java API: config.getJetConfig().setEnabled(true)
+  - Change XML/YAML configuration property: Set hazelcast.jet.enabled to true
+  - Add system property: -Dhz.jet.enabled=true (for Hazelcast embedded, works only when loading config via Config.load)
+  - Add environment variable: HZ_JET_ENABLED=true (recommended when running container image. For Hazelcast embedded, works only when loading config via Config.load)
+Nov 21, 2025 12:36:09 PM com.hazelcast.instance.impl.NodeExtension
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Checking Hazelcast Enterprise license...
+Nov 21, 2025 12:36:09 PM com.hazelcast.instance.impl.NodeExtension
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] License(environmentType=null, allowedNumberOfNodes=9999, version=V6, trial=false, creationDate=2091-09-30T23:59:59.999999999Z, expiryDate=2099-12-30T23:59:59.999999999Z, allowedNativeMemorySize=100, allowedTieredStoreSize=99999, allowedTpcCores=99, oem=true, gracePeriod=0, flow=null, keyHash=lXHPBKosgHZ1DcEZ5cm9/T1083zkjD+CKbtWo2quhng=, restrictedToVersion=No Version Restriction, features=[ Advanced CP Subsystem, CP Subsystem Persistence, Cluster Client Filtering, Clustered JMX, Clustered REST, Dynamic Configuration, Hazelcast Flow, Hazelcast Kong Connector, High Density Memory, Management Center, Persistence, Rolling Upgrade, Security, Streaming Job Upgrades, Streaming Lossless Cluster Restart, Streaming Management Center, Thread Per Core, Tiered Storage, WAN Replication ])
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.tpc.EnterpriseTpcServerBootstrap
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] TPC: disabled
+Nov 21, 2025 12:36:10 PM com.hazelcast.enterprise.wan.impl.WanThrottlingAcknowledger
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Using throttling WAN acknowledgement strategy with pending invocation threshold 50000
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.Diagnostics
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Diagnostics configs overridden by property: {hazelcast.diagnostics.metric.period.seconds = 1, hazelcast.diagnostics.directory = /Users/jim/projects/16357-repro/diagnostics, hazelcast.diagnostics.enabled = true}
+Nov 21, 2025 12:36:10 PM com.hazelcast.system.security
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Enable DEBUG/FINE log level for log category com.hazelcast.system.security  or use -Dhazelcast.security.recommendations system property to see 🔒 security recommendations and the status of current config.
+Nov 21, 2025 12:36:10 PM com.hazelcast.instance.impl.Node
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Using Multicast discovery
+Nov 21, 2025 12:36:10 PM com.hazelcast.cp.CPSubsystem
+WARNING: [100.103.68.83]:5701 [dev] [5.6.0] CP Subsystem is not enabled. CP data structures will operate in UNSAFE mode! Please note that UNSAFE mode will not provide strong consistency guarantees.
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.Diagnostics
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Diagnostics started at [1763746570226]-[2025-11-21T17:36:10.226Z] with configuration DiagnosticsConfig{enabled=true, maxRolledFileSizeInMB=50.0, maxRolledFileCount=10, includeEpochTime=true, logDirectory='/Users/jim/projects/16357-repro/diagnostics', fileNamePrefix='null', outputType=FILE, autoOffDurationInMinutes=-1, properties='{hazelcast.diagnostics.enabled=true, hazelcast.diagnostics.directory=/Users/jim/projects/16357-repro/diagnostics, hazelcast.diagnostics.metric.period.seconds=1}'}
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.BuildInfoPlugin
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Plugin:active
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.SystemPropertiesPlugin
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Plugin:active
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.ConfigPropertiesPlugin
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Plugin:active
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.MetricsPlugin
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Plugin:active, period-millis:60000
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.SlowOperationPlugin
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Plugin:active, period-millis:60000
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.Diagnostics
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Diagnostics log directory is [/Users/jim/projects/16357-repro/diagnostics]
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.InvocationProfilerPlugin
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Plugin:active: period-millis:5000
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.OperationProfilerPlugin
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Plugin:active, period-millis:5000
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.MemberHazelcastInstanceInfoPlugin
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Plugin:active, period-millis:60000
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.SystemLogPlugin
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Plugin:active: logPartitions:false
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.MemberHeartbeatPlugin
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Plugin:active, period-millis:10000
+Nov 21, 2025 12:36:10 PM com.hazelcast.internal.diagnostics.OperationHeartbeatPlugin
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Plugin:active: period-millis:10000 max-deviation:33%
+Nov 21, 2025 12:36:10 PM com.hazelcast.core.LifecycleService
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] [100.103.68.83]:5701 is STARTING
+Nov 21, 2025 12:36:13 PM com.hazelcast.internal.cluster.ClusterService
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] 
+
+Members {size:1, ver:1} [
+	Member [100.103.68.83]:5701 - 38e814d0-2390-4349-b295-929b300f89e5 this
+]
+
+Nov 21, 2025 12:36:13 PM com.hazelcast.core.LifecycleService
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] [100.103.68.83]:5701 is STARTED
+
+=== Member Started Successfully ===
+Cluster name: dev
+Member address: [100.103.68.83]:5701
+Member UUID: 38e814d0-2390-4349-b295-929b300f89e5
+Diagnostics directory: /Users/jim/projects/16357-repro/diagnostics
+  (Diagnostic files will be written here during runtime)
+
+Ready to accept client connections!
+Press Ctrl+C to shutdown...
+
+Nov 21, 2025 12:36:18 PM com.hazelcast.client.impl.protocol.task.AuthenticationMessageTask
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Received auth from Connection[id=1, /127.0.0.1:5701->/127.0.0.1:49387, qualifier=null, endpoint=[127.0.0.1]:49387, remoteUuid=e2030f92-3e52-4f95-8074-057c03523d72, alive=true, connectionType=JVM, planeIndex=-1], successfully authenticated, clientUuid: e2030f92-3e52-4f95-8074-057c03523d72, client name: hz.client_1, client version: 5.6.0
+Nov 21, 2025 12:36:18 PM com.hazelcast.internal.partition.impl.PartitionStateManagerImpl
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Initializing cluster partition table arrangement...
+[OffloadableEP #1] K0 on hz.hungry_cerf.partition-operation.thread-8 [NOT OFFLOADED]
+[OffloadableEP #1] K0 on hz.hungry_cerf.partition-operation.thread-8 [NOT OFFLOADED]
+[OffloadableEP #2] K1 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #2] K1 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #3] K2 on hz.hungry_cerf.partition-operation.thread-1 [NOT OFFLOADED]
+[OffloadableEP #3] K2 on hz.hungry_cerf.partition-operation.thread-1 [NOT OFFLOADED]
+[OffloadableEP #4] K3 on hz.hungry_cerf.partition-operation.thread-7 [NOT OFFLOADED]
+[OffloadableEP #4] K3 on hz.hungry_cerf.partition-operation.thread-7 [NOT OFFLOADED]
+[OffloadableEP #5] K4 on hz.hungry_cerf.partition-operation.thread-6 [NOT OFFLOADED]
+[OffloadableEP #5] K4 on hz.hungry_cerf.partition-operation.thread-6 [NOT OFFLOADED]
+[OffloadableEP #6] K5 on hz.hungry_cerf.partition-operation.thread-2 [NOT OFFLOADED]
+[OffloadableEP #6] K5 on hz.hungry_cerf.partition-operation.thread-2 [NOT OFFLOADED]
+[OffloadableEP #7] K6 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #7] K6 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #8] K7 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #8] K7 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #9] K8 on hz.hungry_cerf.partition-operation.thread-3 [NOT OFFLOADED]
+[OffloadableEP #9] K8 on hz.hungry_cerf.partition-operation.thread-3 [NOT OFFLOADED]
+[OffloadableEP #10] K9 on hz.hungry_cerf.partition-operation.thread-8 [NOT OFFLOADED]
+[OffloadableEP #10] K9 on hz.hungry_cerf.partition-operation.thread-8 [NOT OFFLOADED]
+[OffloadableEP #11] K10 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #11] K10 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #12] K11 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #12] K11 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #13] K12 on hz.hungry_cerf.partition-operation.thread-1 [NOT OFFLOADED]
+[OffloadableEP #13] K12 on hz.hungry_cerf.partition-operation.thread-1 [NOT OFFLOADED]
+[OffloadableEP #14] K13 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #14] K13 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #15] K14 on hz.hungry_cerf.partition-operation.thread-2 [NOT OFFLOADED]
+[OffloadableEP #15] K14 on hz.hungry_cerf.partition-operation.thread-2 [NOT OFFLOADED]
+[OffloadableEP #16] K15 on hz.hungry_cerf.partition-operation.thread-2 [NOT OFFLOADED]
+[OffloadableEP #16] K15 on hz.hungry_cerf.partition-operation.thread-2 [NOT OFFLOADED]
+[OffloadableEP #17] K16 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #17] K16 on hz.hungry_cerf.partition-operation.thread-5 [NOT OFFLOADED]
+[OffloadableEP #18] K17 on hz.hungry_cerf.partition-operation.thread-7 [NOT OFFLOADED]
+[OffloadableEP #18] K17 on hz.hungry_cerf.partition-operation.thread-7 [NOT OFFLOADED]
+[OffloadableEP #19] K18 on hz.hungry_cerf.partition-operation.thread-7 [NOT OFFLOADED]
+[OffloadableEP #19] K18 on hz.hungry_cerf.partition-operation.thread-7 [NOT OFFLOADED]
+[OffloadableEP #20] K19 on hz.hungry_cerf.partition-operation.thread-8 [NOT OFFLOADED]
+[OffloadableEP #20] K19 on hz.hungry_cerf.partition-operation.thread-8 [NOT OFFLOADED]
+[OffloadableEP #21] K20 on hz.hungry_cerf.partition-operation.thread-7 [NOT OFFLOADED]
+[OffloadableEP #21] K20 on hz.hungry_cerf.partition-operation.thread-7 [NOT OFFLOADED]
+[OffloadableEP #22] K21 on hz.hungry_cerf.partition-operation.thread-8 [NOT OFFLOADED]
+[OffloadableEP #22] K21 on hz.hungry_cerf.partition-operation.thread-8 [NOT OFFLOADED]
+[OffloadableEP #23] K22 on hz.hungry_cerf.partition-operation.thread-8 [NOT OFFLOADED]
+[OffloadableEP #23] K22 on hz.hungry_cerf.partition-operation.thread-8 [NOT OFFLOADED]
+[OffloadableEP #24] K23 on hz.hungry_cerf.partition-operation.thread-0 [NOT OFFLOADED]
+[OffloadableEP #24] K23 on hz.hungry_cerf.partition-operation.thread-0 [NOT OFFLOADED]
+[OffloadableEP #25] K24 on hz.hungry_cerf.partition-operation.thread-3 [NOT OFFLOADED]
+[OffloadableEP #25] K24 on hz.hungry_cerf.partition-operation.thread-3 [NOT OFFLOADED]
+[OffloadableEP #26] K0 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #26] K0 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #27] K1 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #27] K1 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #28] K2 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #28] K2 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #29] K3 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #29] K3 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #30] K4 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #30] K4 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #31] K5 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #31] K5 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #32] K6 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #32] K6 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #33] K7 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #33] K7 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #34] K8 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #34] K8 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #35] K9 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #35] K9 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #36] K10 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #36] K10 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #37] K11 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #37] K11 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #38] K12 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #38] K12 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #39] K13 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #39] K13 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #40] K14 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #40] K14 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #41] K15 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #41] K15 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #42] K16 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #42] K16 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #43] K17 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #43] K17 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #44] K18 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #44] K18 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #45] K19 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #45] K19 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #46] K20 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #46] K20 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #47] K21 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #47] K21 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #48] K22 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #48] K22 on hz.hungry_cerf.cached.thread-4 [OFFLOADED]
+[OffloadableEP #49] K23 on hz.hungry_cerf.cached.thread-8 [OFFLOADED]
+[OffloadableEP #49] K23 on hz.hungry_cerf.cached.thread-8 [OFFLOADED]
+[OffloadableEP #50] K24 on hz.hungry_cerf.cached.thread-8 [OFFLOADED]
+[OffloadableEP #50] K24 on hz.hungry_cerf.cached.thread-8 [OFFLOADED]
+[OffloadableEP #51] K25 on hz.hungry_cerf.cached.thread-8 [OFFLOADED]
+[OffloadableEP #51] K25 on hz.hungry_cerf.cached.thread-8 [OFFLOADED]
+Nov 21, 2025 12:38:02 PM com.hazelcast.internal.server.tcp.TcpServerConnection
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Connection[id=1, /127.0.0.1:5701->/127.0.0.1:49387, qualifier=null, endpoint=[127.0.0.1]:49387, remoteUuid=e2030f92-3e52-4f95-8074-057c03523d72, alive=false, connectionType=JVM, planeIndex=-1] closed. Reason: Connection closed by the other side
+Nov 21, 2025 12:38:02 PM com.hazelcast.client.impl.ClientEndpointManager
+INFO: [100.103.68.83]:5701 [dev] [5.6.0] Destroying ClientEndpoint{connection=Connection[id=1, /127.0.0.1:5701->/127.0.0.1:49387, qualifier=null, endpoint=[127.0.0.1]:49387, remoteUuid=e2030f92-3e52-4f95-8074-057c03523d72, alive=false, connectionType=JVM, planeIndex=-1], clientUuid=e2030f92-3e52-4f95-8074-057c03523d72, clientName=hz.client_1, authenticated=true, clientVersion=5.6.0, creationTime=1763746578064, latest clientAttributes=lastStatisticsCollectionTime=1763746678119,enterprise=true,clientType=JVM,clientVersion=5.6.0,clusterConnectionTimestamp=1763746578055,clientAddress=127.0.0.1,clientName=hz.client_1,credentials.principal=null,os.committedVirtualMemorySize=0,os.freePhysicalMemorySize=75726848,os.freeSwapSpaceSize=0,os.maxFileDescriptorCount=0,os.openFileDescriptorCount=0,os.processCpuTime=0,os.systemLoadAverage=3.59814453125,os.totalPhysicalMemorySize=34359738368,os.totalSwapSpaceSize=0,runtime.availableProcessors=10,runtime.freeMemory=80815320,runtime.maxMemory=8589934592,runtime.totalMemory=104857600,runtime.uptime=101121,runtime.usedMemory=24042280, labels=[]}
+
+Shutting down Hazelcast member...
+Shutdown complete.
