@@ -20,8 +20,13 @@ echo ""
 # Check for license key
 if [ -z "$HZ_LICENSEKEY" ]; then
     echo "⚠️  WARNING: HZ_LICENSEKEY environment variable not set"
-    echo "   The member may start in OSS mode"
-    echo ""
+    echo "   Please set the HZ_LICENSEKEY environment variable to your Hazelcast license key. From your command line, run:"
+    echo "export HZ_LICENSEKEY="V6_UNLI... " (replace with your actual license key)"
+    echo
+    echo "if you don't have a license key, you can get a free trial from https://hazelcast.com/trial/"
+    exit 1
+else
+    echo "✓ HZ_LICENSEKEY environment variable set"
 fi
 
 # Check for existing Hazelcast processes on ports 5701-5703
